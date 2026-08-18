@@ -42,6 +42,7 @@ resqbot-final/
 │   ├── app.py                   # Central Python desktop app (Flask HTTP server + Tkinter GUI)
 │   └── person.pt                # Trained YOLO neural network weights for human detection
 ├── Project_Price_Quotation_ResqBot_Final.pdf  # Bill of materials and cost breakdown documentation
+├── Resqbot Model Specifications.pdf  # Model specifications / CAD documentation
 ├── ResqBot Schematics.pdf        # Schematic electrical wiring diagrams
 └── README.md                    # System documentation
 ```
@@ -72,6 +73,58 @@ resqbot-final/
 
 ### 4. Structural Hull and Mechanical CAD
 * STL files for full hull assembly are provided in the `3D Parts/` folder, including Left and Right Hulls, Electronics Compartment, Hinge, and Latch mechanisms.
+
+---
+
+## Technical Specifications
+
+### 1. Computer Vision AI Model Specifications
+* **Model Architecture:** YOLO (You Only Look Once) neural network object detector optimized for real-time human detection.
+* **Weights File:** `person.pt`
+* **Target Class:** Class `0` (Person / Human Detection).
+* **Confidence Threshold:** `0.35` (`conf=0.35`).
+* **Input Resolution:** Scaled to 480x360 pixels from incoming JPEG video streams (VGA / QVGA).
+* **Inference Pipeline:** PyTorch / Ultralytics YOLO inference integrated with OpenCV bounding box annotations and automatic buzzer alert triggers.
+
+### 2. Microcontroller & Processing Specifications
+* **ESP32-Main Node:**
+  * Processor: Tensilica Xtensa Dual-Core 32-bit LX6 @ 240 MHz.
+  * Memory: 520 KB SRAM, 4 MB Flash memory.
+  * Wireless Connectivity: Wi-Fi 802.11 b/g/n, Bluetooth v4.2 BR/EDR & BLE.
+  * Operating Voltage: 3.3V Logic (5.0V VCC input from buck regulator).
+* **ESP32-CAM Node:**
+  * Module Type: AI-Thinker ESP32-CAM.
+  * Camera Sensor: Omnivision OV2640 2 MP Image Sensor.
+  * Video Formats: JPEG streaming over HTTP POST at VGA (640x480) / QVGA (320x240).
+  * External Memory: 4 MB PSRAM for multi-buffer frame buffering.
+
+### 3. Sensor Module Specifications
+* **Far-Infrared Thermal Sensor (GY-MCU90640 / MLX90640):**
+  * Sensor Array Resolution: 32 x 24 IR pixels (768 total temperature data points).
+  * Field of View (FOV): 55° x 35° / 110° x 75°.
+  * Temperature Measurement Range: -40°C to +300°C.
+  * Interface: Hardware UART @ 115200 Baud (1544-byte raw frame packet).
+* **Ultrasonic Distance Sensor:**
+  * Interface: Serial UART (GPIO 5 TX / GPIO 18 RX).
+* **Status OLED Display:**
+  * Screen Size: 0.96 inch SSD1306 Monochrome Display.
+  * Resolution: 128 x 64 pixels.
+  * Bus Protocol: I2C (Default address `0x3C` / `0x3D`, SDA GPIO 21, SCL GPIO 22).
+* **Acoustic Alert:**
+  * Active 5V Piezoelectric Buzzer on GPIO 27.
+
+### 4. Propulsion & Motor Control Specifications
+* **Motor Driver:** L9110S Dual-Channel H-Bridge Motor Driver Module.
+* **Continuous Current:** 800 mA per channel (1.5 A peak).
+* **Operating Voltage:** 2.5V to 12V DC.
+* **Control Method:** 4-Channel PWM speed ramping (5 kHz frequency, 8-bit resolution: 0 - 255).
+* **Drive System:** Differential steering (Independent Left/Right propulsion thrusters).
+
+### 5. Power & Voltage Regulation Specifications
+* **Battery Pack:** 3S Li-ion Battery Configuration (11.1V nominal, 12.6V max charge).
+* **Logic Voltage Regulator:** Mini-360 / LM2596 DC-DC Buck Converter outputting 5.00V DC for MCU and sensor logic.
+* **Motor Voltage Regulator:** Dedicated Mini-360 DC-DC Buck Converter supplying high-current power rail for L9110 motor driver.
+* **Charging Interface:** Integrated 3S 2A Type-C Lithium Battery Charger Module with series cell balancing (`B+`, `B2`, `B1`, `B-`).
 
 ---
 
