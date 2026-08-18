@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQBot Technical & Operations Manual</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Header & Document Metadata -->
+  <header>
+    <div class="header-container">
+      <div class="doc-metadata">
+        <div class="doc-badge-icon">R</div>
+        <div>
+          <h1 class="doc-title">ResQBot Operations & Technical Manual</h1>
+        </div>
+      </div>
+
+      <div class="doc-ref-tags">
+        <span class="ref-tag">REV v2.4</span>
+        <span class="ref-tag">PLATFORM: ESP32 / PYTHON</span>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-tab="overview">1.0 System Overview</button>
+        <button class="nav-tab" data-tab="viewer">2.0 Hardware Diagram</button>
+        <button class="nav-tab" data-tab="boot">3.0 Boot Sequence</button>
+        <button class="nav-tab" data-tab="subsystems">4.0 Subsystems</button>
+        <button class="nav-tab" data-tab="trouble">5.0 Troubleshooting</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main>
+
+    <!-- SECTION 1.0: SYSTEM OVERVIEW -->
+    <section id="tab-overview" class="tab-content active">
+      <div class="section-header">
+        <span class="section-num">1.0</span>
+        <h2 class="section-title">System Architecture & Overview</h2>
+        <p class="section-desc">Technical breakdown of the ResQBot dual-microcontroller reconnaissance platform and desktop station integration.</p>
+      </div>
+
+      <div class="guide-grid">
+        <div class="guide-card">
+          <h3>Dual Microcontroller Architecture</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:0.75rem;">
+            ResQBot utilizes two independent ESP32 microcontrollers to segregate video capture and sensor telemetry workloads:
+          </p>
+          <ul style="color:var(--text-main); font-size:0.85rem; padding-left:1.1rem; margin-bottom:0.75rem;">
+            <li><strong>ESP32-CAM Node:</strong> Dedicated OV2640 camera streaming node posting binary JPEG frames over HTTP POST to the central server.</li>
+            <li><strong>ESP32-Main Station Node:</strong> Core processing node parsing MLX90640 thermal UART telemetry, driving the SSD1306 OLED, executing L9110 motor PWM ramping, and controlling the alarm buzzer.</li>
+          </ul>
+        </div>
+
+        <div class="guide-card">
+          <h3>Python Control Station & AI Pipeline</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:0.75rem;">
+            The central Flask and Tkinter application hosted on the PC processes raw stream feeds in real time:
+          </p>
+          <ul style="color:var(--text-main); font-size:0.85rem; padding-left:1.1rem;">
+            <li><strong>YOLO Person Detection:</strong> Evaluates incoming JPEG frames using the <code>person.pt</code> neural network model.</li>
+            <li><strong>Thermal JET Interpolation:</strong> Converts 768 floating-point temperature values into a 24x32 color-mapped thermal matrix.</li>
+            <li><strong>WASD Steering Engine:</strong> Translates operator key controls into differential motor PWM speed targets.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:1.25rem;">
+        <div class="callout-title">SAFETY PROTOCOL SUMMARY</div>
+        <div class="callout-body">
+          Always ensure the main Rocker Switch is set to Position O (Charge Mode) before plugging in USB Type-C charging power. Operating or charging with reversed polarity will result in permanent hardware damage.
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2.0: INTERACTIVE HARDWARE DIAGRAM -->
+    <section id="tab-viewer" class="tab-content">
+      <div class="section-header">
+        <span class="section-num">2.0</span>
+        <h2 class="section-title">Perfboard Circuit Diagram</h2>
+        <p class="section-desc">Select any numbered component pin on the diagram below to inspect technical specifications, electrical connections, operating protocols, and precautions.</p>
+      </div>
+
+      <div class="interactive-viewer-container">
+        <!-- Viewer Stage & Toolbar -->
+        <div>
+          <div class="viewer-toolbar">
+            <span class="toolbar-title">Hardware Component Viewer</span>
+            <div class="toolbar-actions">
+              <button class="tool-btn" id="zoom-in">Zoom In (+)</button>
+              <button class="tool-btn" id="zoom-out">Zoom Out (-)</button>
+              <button class="tool-btn" id="zoom-reset">Reset View</button>
+              <button class="tool-btn" id="toggle-hotspots">Hotspots: ON</button>
+            </div>
+          </div>
+
+          <div class="image-stage">
+            <div class="board-image-wrapper" id="board-wrapper">
+              <img src="perfboard_view.png" alt="ResQBot Perfboard Circuit Diagram" class="board-image" id="perfboard-img">
+              <!-- Hotspots injected by script.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Component Drawer -->
+        <div class="component-sidebar" id="component-sidebar">
+          <!-- Card content injected by script.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3.0: STEP-BY-STEP BOOT & COMMISSIONING SEQUENCE -->
+    <section id="tab-boot" class="tab-content">
+      <div class="section-header">
+        <span class="section-num">3.0</span>
+        <h2 class="section-title">Step-by-Step Commissioning & Boot Guide</h2>
+        <p class="section-desc">Sequential operations workflow to safely verify hardware wiring, initialize host software, provision microcontrollers, and operate the robot.</p>
+      </div>
+
+      <div class="timeline-container">
+        <!-- Step 1 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">01</div>
+          <div class="step-content-body">
+            <div class="step-header-title">Physical Wiring & Electrical Calibration</div>
+            <div class="step-subtext">
+              Before applying main battery power, verify all electrical connections and rail voltages using a digital multimeter.
+            </div>
+            <ul class="guide-steps" style="margin-top:0.4rem;">
+              <li>Confirm 3S battery leads are wired to the 3S charger module: <code>BAT+</code> (Red) and <code>BAT-</code> (Black).</li>
+              <li>Verify the LM2596 buck converter input terminals connect to the switched output of the Rocker Switch.</li>
+              <li><strong>Voltage Calibration:</strong> Disconnect microcontrollers from the 5V rail. Toggle Rocker Switch to Position I and measure LM2596 output with a multimeter. Adjust brass potentiometer until output reads exactly <strong>5.00V DC</strong>.</li>
+              <li>Ensure a shared common ground bus links all GND pins across ESP32-Main, ESP32-CAM, OLED, MLX sensor, Ultrasonic sensor, Buzzer, and L9110 motor driver.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">02</div>
+          <div class="step-content-body">
+            <div class="step-header-title">Python Environment Setup & Model Deployment</div>
+            <div class="step-subtext">
+              Install required Python 3.10+ dependencies and verify neural network weight files.
+            </div>
+            <div style="margin-top:0.4rem;">
+              <p style="font-size:0.85rem; color:var(--text-main); margin-bottom:0.35rem;">Run package installation in terminal:</p>
+              <pre><code>pip install ultralytics opencv-python pillow flask requests numpy</code></pre>
+              <p style="font-size:0.83rem; color:var(--text-muted); margin-top:0.4rem;">
+                Confirm that the YOLO neural network model file <code>person.pt</code> is located inside the <code>python/</code> folder.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">03</div>
+          <div class="step-content-body">
+            <div class="step-header-title">Host Server Launch & Local IP Identification</div>
+            <div class="step-subtext">
+              Execute the central desktop control station and record the host IP address.
+            </div>
+            <div style="margin-top:0.4rem;">
+              <p style="font-size:0.85rem; color:var(--text-main); margin-bottom:0.35rem;">Start the application server:</p>
+              <pre><code>python python/app.py</code></pre>
+              <p style="font-size:0.83rem; color:var(--text-muted); margin-top:0.4rem;">
+                Observe the window header displaying the host address: <code>Server Running @ http://&lt;HOST_IP&gt;:5000</code> (e.g. <code>http://192.168.18.155:5000</code>). Note this IP address for provisioning steps.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">04</div>
+          <div class="step-content-body">
+            <div class="step-header-title">System Power On & Microcontroller AP Provisioning</div>
+            <div class="step-subtext">
+              Provision WiFi credentials and server target IP into NVS flash memory on both microcontrollers.
+            </div>
+            <ol class="guide-steps" style="margin-top:0.4rem;">
+              <li>Toggle main Rocker Switch to <strong>Position I (System Power ON)</strong>.</li>
+              <li><strong>ESP32-CAM Provisioning:</strong> Connect PC/mobile to WiFi AP <code>ResQBot-CAM-AP</code>. Navigate browser to <code>http://192.168.4.1</code>. Input local WiFi SSID, Password, and Server IP. Click <strong>Connect & Continue Operations</strong>.</li>
+              <li><strong>ESP32-Main Provisioning:</strong> Connect PC/mobile to WiFi AP <code>ResQBot-Main-AP</code>. Navigate browser to <code>http://192.168.4.1</code>. Input identical local WiFi SSID, Password, and Server IP. Click <strong>Connect & Continue Operations</strong>.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">05</div>
+          <div class="step-content-body">
+            <div class="step-header-title">Telemetry Verification & Steering Operations</div>
+            <div class="step-subtext">
+              Verify active stream feeds and test differential motor steering controls.
+            </div>
+            <ul class="guide-steps" style="margin-top:0.4rem;">
+              <li>Inspect SSD1306 OLED display on robot: verify <code>WiFi: Connected</code>, <code>Python App: Connected</code>, and <code>MLX: OK</code>.</li>
+              <li>Inspect Python Desktop App GUI: verify live camera feed with YOLO bounding boxes and thermal JET heat map display.</li>
+              <li>Click inside Tkinter window and test WASD steering: <code>W</code> (Forward), <code>S</code> (Reverse), <code>A</code> (Spin Left), <code>D</code> (Spin Right), <code>Spacebar</code> (Emergency Stop).</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="timeline-step-card">
+          <div class="step-number-badge">06</div>
+          <div class="step-content-body">
+            <div class="step-header-title">Shutdown & 3S Type-C Charging Protocol</div>
+            <div class="step-subtext">
+              Safely isolate electronics and execute battery charging procedure.
+            </div>
+            <ol class="guide-steps" style="margin-top:0.4rem;">
+              <li>Press <code>Spacebar</code> in app window to stop motor outputs.</li>
+              <li>Toggle Rocker Switch to <strong>Position O (Charge Mode)</strong> to disconnect system electronics.</li>
+              <li>Plug USB Type-C charging cable into 3S charger module port.</li>
+              <li>Verify <strong>Red LED</strong> is lit during charging. Disconnect charger once <strong>Blue LED</strong> indicates full charge.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4.0: SUBSYSTEM SPECIFICATIONS -->
+    <section id="tab-subsystems" class="tab-content">
+      <div class="section-header">
+        <span class="section-num">4.0</span>
+        <h2 class="section-title">Subsystem Specifications & Access Point Interface</h2>
+        <p class="section-desc">Detailed hardware and software protocols for camera streaming, thermal sensor parsing, and control desktop station.</p>
+      </div>
+
+      <div class="guide-grid">
+        <div class="guide-card">
+          <h3>ESP32-CAM Node Specifications</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:0.75rem;">
+            OV2640 camera node streaming binary JPEG buffers over HTTP POST.
+          </p>
+          <div class="info-group">
+            <div class="info-label">HTTP Telemetry Endpoint</div>
+            <code>http://&lt;HOST_IP&gt;:5000/upload_cam</code>
+          </div>
+          <div class="info-group">
+            <div class="info-label">Frame Resolution</div>
+            <p style="color:var(--text-main); font-size:0.82rem;">
+              VGA (640x480) with PSRAM enabled; QVGA (320x240) fallback.
+            </p>
+          </div>
+        </div>
+
+        <div class="guide-card">
+          <h3>ESP32-Main Station Specifications</h3>
+          <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:0.75rem;">
+            Master MCU parsing MLX90640 UART telemetry and handling motor PWM ramping.
+          </p>
+          <div class="info-group">
+            <div class="info-label">Thermal Telemetry Endpoint</div>
+            <code>http://&lt;HOST_IP&gt;:5000/upload_mlx</code>
+          </div>
+          <div class="info-group">
+            <div class="info-label">UART Configuration</div>
+            <code>115200 Baud | 1544 Byte Frame Buffer</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Static Technical Figures -->
+      <div class="guide-grid" style="margin-top:1.25rem;">
+        <div class="figure-container" style="margin-top:0;">
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dots">
+                <span class="dot-btn dot-red"></span>
+                <span class="dot-btn dot-yellow"></span>
+                <span class="dot-btn dot-green"></span>
+              </div>
+              <div class="browser-address">
+                <span style="color:var(--accent-emerald-light);">http://</span>192.168.4.1/
+              </div>
+            </div>
+            <div class="browser-body">
+              <div class="ap-portal-card">
+                <h2>ResQBot Camera Module</h2>
+                <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:12px;">WiFi & Host Server Setup</p>
+                <div>
+                  <label>WiFi Network (SSID):</label>
+                  <div class="ap-portal-input">ResQBot_Rescue_Net</div>
+                  <label>WiFi Password:</label>
+                  <div class="ap-portal-input">• • • • • • • •</div>
+                  <label>Host PC / Server IP Address:</label>
+                  <div class="ap-portal-input">192.168.18.155</div>
+                  <div class="ap-portal-btn-static">Connect & Continue Operations</div>
+                </div>
+                <div class="ap-portal-status">AP IP: 192.168.4.1</div>
+              </div>
+            </div>
+          </div>
+          <div class="figure-caption">Figure 4.1: ESP32-CAM Captive Portal Interface (http://192.168.4.1)</div>
+        </div>
+
+        <div class="figure-container" style="margin-top:0;">
+          <div class="browser-mockup">
+            <div class="browser-bar">
+              <div class="browser-dots">
+                <span class="dot-btn dot-red"></span>
+                <span class="dot-btn dot-yellow"></span>
+                <span class="dot-btn dot-green"></span>
+              </div>
+              <div class="browser-address">
+                <span style="color:var(--accent-emerald-light);">http://</span>192.168.4.1/
+              </div>
+            </div>
+            <div class="browser-body">
+              <div class="ap-portal-card">
+                <h2>ResQBot Main Station</h2>
+                <p style="color:#a1a1aa; font-size:0.8rem; margin-bottom:12px;">WiFi & Host Server Setup</p>
+                <div>
+                  <label>WiFi Network (SSID):</label>
+                  <div class="ap-portal-input">ResQBot_Rescue_Net</div>
+                  <label>WiFi Password:</label>
+                  <div class="ap-portal-input">• • • • • • • •</div>
+                  <label>Host PC / Server IP Address:</label>
+                  <div class="ap-portal-input">192.168.18.155</div>
+                  <div class="ap-portal-btn-static">Connect & Continue Operations</div>
+                </div>
+                <div class="ap-portal-status">AP IP: 192.168.4.1</div>
+              </div>
+            </div>
+          </div>
+          <div class="figure-caption">Figure 5.1: ESP32-Main Station Captive Portal Interface (http://192.168.4.1)</div>
+        </div>
+      </div>
+
+      <!-- WASD Steering Simulator -->
+      <div class="wasd-demo-box">
+        <h3 style="color:var(--accent-blue-light); font-size:1.05rem; margin-bottom:0.3rem;">Keyboard Steering & Motor PWM Simulator</h3>
+        <p style="color:var(--text-muted); font-size:0.82rem;">Press keys on keyboard (W, A, S, D) or click buttons below to simulate motor output:</p>
+
+        <div class="wasd-grid">
+          <div class="key-cap key-w" id="key-w">W<span class="key-sub">FWD</span></div>
+          <div class="key-cap key-a" id="key-a">A<span class="key-sub">LEFT</span></div>
+          <div class="key-cap key-s" id="key-s">S<span class="key-sub">REV</span></div>
+          <div class="key-cap key-d" id="key-d">D<span class="key-sub">RIGHT</span></div>
+        </div>
+
+        <div id="wasd-sim-status" style="font-family:var(--font-mono); font-size:0.85rem; color:var(--accent-emerald-light); margin-top:0.35rem; font-weight:700;">
+          STEERING: [STOPPED]
+        </div>
+
+        <div class="motor-meters-container">
+          <div class="meter-box">
+            <div class="meter-header">
+              <span class="meter-title">PROPELLER MOTOR A</span>
+              <span class="meter-val" id="meter-val-a">0</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-bar" id="meter-bar-a"></div>
+            </div>
+          </div>
+
+          <div class="meter-box">
+            <div class="meter-header">
+              <span class="meter-title">PROPELLER MOTOR B</span>
+              <span class="meter-val" id="meter-val-b">0</span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-bar" id="meter-bar-b"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5.0: TROUBLESHOOTING MATRIX -->
+    <section id="tab-trouble" class="tab-content">
+      <div class="section-header">
+        <span class="section-num">5.0</span>
+        <h2 class="section-title">Diagnostic & Troubleshooting Matrix</h2>
+        <p class="section-desc">Search or filter resolution protocols for power, connectivity, sensor, and motor failure modes.</p>
+      </div>
+
+      <!-- Search & Filters -->
+      <input type="text" id="trouble-search" class="search-input" placeholder="Search failure modes (e.g. battery, camera, motor, OLED, thermal, WiFi, buzzer)...">
+
+      <div class="filter-pills">
+        <button class="filter-pill active" data-filter="all">All Scenarios</button>
+        <button class="filter-pill" data-filter="power">Power & Charging</button>
+        <button class="filter-pill" data-filter="cam">Camera</button>
+        <button class="filter-pill" data-filter="mlx">Thermal Sensor</button>
+        <button class="filter-pill" data-filter="motor">Motors</button>
+        <button class="filter-pill" data-filter="app">Display & App</button>
+      </div>
+
+      <div class="trouble-list">
+        <!-- Scenario 1 -->
+        <div class="trouble-item" data-category="power">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 1: Robot does not turn on or shuts down under motor load</span>
+            <span class="trouble-tag tag-power">Power System</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Switch set to Charge Mode, low battery voltage, or LM2596 loose wire connection.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Verify Rocker Switch is toggled to <strong>Position I (System Power ON)</strong>.</li>
+                <li>Measure battery voltage with multimeter across BAT+ and BAT- (must be &gt;10.5V DC).</li>
+                <li>Inspect LM2596 screw terminals and verify OUT+ output reads 5.00V DC.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 2 -->
+        <div class="trouble-item" data-category="power">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 2: Battery fails to charge when Type-C cable is connected</span>
+            <span class="trouble-tag tag-power">Charging</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Switch left in Position I, faulty USB cable, or battery terminal disconnected.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Switch MUST be set to <strong>Position O (Charge Mode)</strong> during charging.</li>
+                <li>Verify the <strong>Red LED</strong> on 3S charger module illuminates. If no LED lights, test with another Type-C cable and 5V/2A power adapter.</li>
+                <li>A <strong>Blue LED</strong> indicates battery is already fully charged.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 3 -->
+        <div class="trouble-item" data-category="cam">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 3: ESP32-CAM video stream offline or missing in Python app</span>
+            <span class="trouble-tag tag-cam">Camera</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Server IP address mismatch, Windows Firewall blocking port 5000, or insufficient 5V supply current.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Connect smartphone to <code>ResQBot-CAM-AP</code>, navigate to <code>192.168.4.1</code>, and verify your Host PC IP address.</li>
+                <li>Allow Python through firewall for <strong>Port 5000</strong>.</li>
+                <li>Ensure ESP32-CAM receives steady 5V power supply from regulator output rail.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 4 -->
+        <div class="trouble-item" data-category="mlx">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 4: OLED shows "MLX: NO" or thermal heatmap is frozen</span>
+            <span class="trouble-tag tag-mlx">Thermal Sensor</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Loose UART wires (RX2/TX2), swapped RX/TX lines, or missing 1.5s boot delay.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Confirm MLX90640 <strong>TX</strong> is wired to ESP32 GPIO 16 (RX2), and MLX <strong>RX</strong> to GPIO 17 (TX2).</li>
+                <li>Ensure sensor receives stable power. Wait 5 seconds for auto-healing loop to re-initialize UART connection.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 5 -->
+        <div class="trouble-item" data-category="motor">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 5: Motors spin in reverse direction or ignore WASD controls</span>
+            <span class="trouble-tag tag-motor">Motor Driver</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Reversed motor terminal leads or lost window focus in Python app window.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>If Motor A spins backward when pressing W, swap the two output wires connected to MOTOR A screw terminal on L9110 driver.</li>
+                <li>Click inside Tkinter desktop window to ensure keyboard focus for WASD steering.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 6 -->
+        <div class="trouble-item" data-category="app">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 6: SSD1306 OLED display remains completely dark on boot</span>
+            <span class="trouble-tag tag-app">Display</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Swapped SDA/SCL pins, wrong I2C address, or loose power connection.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Verify OLED <strong>SDA</strong> connects to GPIO 21 and <strong>SCL</strong> to GPIO 22.</li>
+                <li>Check that VDD receives 5V (or 3.3V) and GND is securely connected. ESP32-Main code automatically scans I2C addresses <code>0x3C</code> and <code>0x3D</code>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 7 -->
+        <div class="trouble-item" data-category="app">
+          <div class="trouble-header">
+            <span class="trouble-title">Scenario 7: Alarm buzzer does not sound when person is detected</span>
+            <span class="trouble-tag tag-app">Buzzer</span>
+          </div>
+          <div class="trouble-body">
+            <div class="trouble-cause">Possible Cause: Loose GPIO 27 connection, passive buzzer used instead of active buzzer, or missing person.pt model file.</div>
+            <div class="trouble-solution">
+              <strong>Action:</strong>
+              <ol style="margin-top:0.35rem; padding-left:1.1rem;">
+                <li>Ensure an <strong>Active 5V Piezo Buzzer</strong> is wired to GPIO 27.</li>
+                <li>Confirm <code>person.pt</code> model file exists in <code>python/</code> directory.</li>
+                <li>Test buzzer manually by accessing <code>http://&lt;ESP32_IP&gt;/beep</code> in web browser.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
